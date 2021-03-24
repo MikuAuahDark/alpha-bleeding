@@ -19,7 +19,7 @@ unsigned char *png_load(const char *path, int *width, int *height, int *channels
 	if (!lodepng_load_file(&file, &outsize, path))
 	{
 		if (!lodepng_decode(&image, (unsigned int *) width, (unsigned int *) height, &state, file, outsize))
-			*channels = (int) lodepng_get_channels(&state.info_raw);
+			*channels = state.info_raw.colortype == LodePNGColorType::LCT_RGBA ? 4 : 3;
 	}
 
 	free(file);
