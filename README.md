@@ -9,7 +9,9 @@ Both `<input>` and `<output>` should be PNG image files.
 
 **Building:**
 
-Just type `make` on the root directory. `libpng` and `libz` are the only required dependencies.
+Just type `make` on the root directory. No additional dependencies required.
+
+For MSVC, run `msvcbuild.bat`.
 
 **Example:**
 
