@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 	const char *input = argv[2];
 	const char *output = argv[3];
 
-	if (std::ifstream(output).good())
+	if (strcmp(input, output) && std::ifstream(output).good())
 	{
 		std::cout << "Output file already exists!" << std::endl;
 		return 0;
