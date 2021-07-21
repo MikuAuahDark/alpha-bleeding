@@ -50,8 +50,10 @@ int main(int argc, char *argv[])
 		min_x = 0;
 		min_y = 0;
 	}
-	std::cout << min_x << std::endl;
-	std::cout << min_y << std::endl;
+	std::cout << min_x << ",";
+	std::cout << min_y << ",";
+	std::cout << w << ",";
+	std::cout << h << std::endl;
 	png_save(output, out_w, out_h, out_data);
 
 	delete[] out_data;
