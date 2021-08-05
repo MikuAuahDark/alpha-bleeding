@@ -1,7 +1,8 @@
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <stdint.h>
+#include <limits>
 
 #include "png.h"
 
@@ -11,8 +12,8 @@ int main(int argc, char *argv[])
 {
 	if (argc != 3)
 	{
-		std::cout << "Usage: alpha-bleeding <input> <output>" << std::endl;
-		return 0;
+		std::cout << "Usage: alpha-trim <input> <output>" << std::endl;
+		return 1;
 	}
 
 	const char *input = argv[1];
@@ -21,14 +22,14 @@ int main(int argc, char *argv[])
 	if (strcmp(input, output) && std::ifstream(output).good())
 	{
 		std::cout << "Output file already exists!" << std::endl;
-		return 0;
+		return 1;
 	}
 
 	int w, h, c;
 
 	unsigned char *data = png_load(input, &w, &h, &c);
 
-	if (data == 0)
+	if (!data)
 	{
 		std::cout << "Error loading image. Must be PNG format." << std::endl;
 		return 1;
@@ -38,15 +39,16 @@ int main(int argc, char *argv[])
 	{
 		std::cout << "The image must be 32 bits (RGB with alpha channel)." << std::endl;
 		delete[] data;
-		return 0;
+		return 1;
 	}
 
-	int min_x = 1000000000;
-	int min_y = 1000000000;
+	constexpr int int_max = std::numeric_limits<int>::max();
+	int min_x = int_max;
+	int min_y = int_max;
 	int out_w = 1;
 	int out_h = 1;
 	unsigned char *out_data = alpha_trim(data, w, h, min_x, min_y, out_w, out_h);
-	if (min_x == 1000000000) {
+	if (min_x == int_max) {
 		min_x = 0;
 		min_y = 0;
 	}
@@ -65,8 +67,9 @@ int main(int argc, char *argv[])
 unsigned char* alpha_trim(unsigned char *image, int width, int height, int& min_x, int& min_y, int& out_w, int& out_h)
 {
 	const size_t N = width * height;
-	int max_x = -1;
-	int max_y = -1;
+	int max_x = std::numeric_limits<int>::min();
+	int max_y = max_x;
+	bool has_opaque = false;
 
 	for (int i = 0, j = 3; i < N; i++, j += 4)
 	{
@@ -74,29 +77,31 @@ unsigned char* alpha_trim(unsigned char *image, int width, int height, int& min_
 		{
 			int x = i % width;
 			int y = i / width;
-			if (x < min_x) {
-				min_x = x;
-			}
-			if (x > max_x) {
-				max_x = x;
-			}
-			if (y < min_y) {
-				min_y = y;
-			}
-			if (y > max_y) {
-				max_y = y;
-			}
+			min_x = std::min(x, min_x);
+			max_x = std::max(x, max_x);
+			min_y = std::min(y, min_y);
+			max_y = std::max(y, max_y);
+			has_opaque = true;
 		}
 	}
-	if (max_x == -1) {
+
+	if (!has_opaque)
+	{
 		min_x = 0;
 		min_y = 0;
 		max_x = 0;
 		max_y = 0;
 	}
-
-	out_w = max_x - min_x + 1;
-	out_h = max_y - min_y + 1;
+	else
+	{
+		// Pad by 1px
+		min_x = std::max(min_x - 1, 0);
+		max_x = std::min(max_x + 1, width - 1);
+		min_y = std::max(min_y - 1, 0);
+		max_y = std::min(max_y + 1, height - 1);
+		out_w = max_x - min_x + 1;
+		out_h = max_y - min_y + 1;
+	}
 
 	unsigned char* ret = new unsigned char[out_w * out_h * 4];
 	for (int x = 0; x < out_w; x++) {
